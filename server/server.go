@@ -16,6 +16,12 @@ import (
 
 func AlertSystemService() {
 
+	// create log folder
+	err := os.MkdirAll("../logs", 0777)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	// open file to write log, create if does not exsist, truncte if file exsist
 	f, err := os.OpenFile("../logs/alertsystem.log", os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0666)
 	if err != nil {
