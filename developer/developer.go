@@ -126,3 +126,14 @@ func UpdateDeveloper(ctx *gin.Context) {
 	model.Logger.Println("Updated Developer list")
 	ctx.JSON(http.StatusOK, dev)
 }
+
+func MapDevToTeam(developerIDs []int64, teamID interface{}) {
+
+	for _, val := range developerIDs {
+		_, err := model.DB.Exec(`update developer set team_id=$1 where id=$2`, teamID, val)
+		if err != nil {
+			model.Logger.Println(err)
+			return
+		}
+	}
+}

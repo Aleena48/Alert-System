@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Aleena48/Alert-System/model"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,13 +20,13 @@ type message struct {
 
 type sms struct {
 	Id      int64     `json:"id,omitempty"`
-	Mobile  int64     `json:"mobile,omitempty"`
+	Mobile  []int     `json:"mobile,omitempty"`
 	Content string    `json:"content,omitempty"`
 	MsgTime time.Time `json:"sent_at,omitempty"`
 }
 type email struct {
 	Id      int64     `json:"id,omitempty"`
-	Email   string    `json:"email,omitempty"`
+	Email   []string  `json:"email,omitempty"`
 	Content string    `json:"content,omitempty"`
 	Title   string    `json:"title,omitempty"`
 	MsgTime time.Time `json:"sent_at,omitempty"`
@@ -53,23 +55,42 @@ func CreateNotification(ctx *gin.Context) {
 	}
 	model.Logger.Println("Message=", msg)
 
-	model.Logger.Println("Table data insterted")
+	rows, err := model.DB.Query(`select email, mobile from developer where team_id = $1`, msg.TeamId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, err.Error())
+		model.Logger.Println(err)
+		return
+	}
+	var emailLst []string
+	var mobileLst []int
+
+	for rows.Next() {
+		var email string
+		var mob string
+
+		rows.Scan(&email, &mob)
+
+		emailLst = append(emailLst, email)
+		mobile, _ := strconv.Atoi(mob)
+		mobileLst = append(mobileLst, mobile)
+	}
 
 	alertMsg = alert{
 		TeamId: msg.TeamId,
 		Sms: sms{
 			Id:      rand.Int63(),
-			Mobile:  0,
+			Mobile:  mobileLst,
 			Content: msg.Content,
 			MsgTime: time.Now(),
 		},
 		Email: email{
 			Id:      rand.Int63(),
-			Email:   "",
+			Email:   emailLst,
 			Content: msg.Content,
 			Title:   msg.Title,
 			MsgTime: time.Now(),
 		},
 	}
 	ctx.JSON(http.StatusOK, alertMsg)
+
 }
